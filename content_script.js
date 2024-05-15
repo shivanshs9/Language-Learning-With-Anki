@@ -1,5 +1,4 @@
-(function ()
-{
+(function () {
     /* This runs on all "youtube" and "netflix" web pages */
     console.log("----- [content_script.js] LOADED");
 
@@ -8,43 +7,33 @@
         console.log("[MAIN] Adding button...")
 
         let lln_search_class_name = '';
-        if(window.location.href.includes("netflix"))
-        {
+        if (window.location.href.includes("netflix")) {
             lln_search_class_name = 'lln-netflix';
         }
-        else if(window.location.href.includes("youtube"))
-        {
+        else if (window.location.href.includes("youtube")) {
             lln_search_class_name = 'lln-youtube';
         }
-        else
-        {
+        else {
             console.log("Wrong website");
             return;
         }
-        
+
 
         // we loop for the body to had the correct "lln" class name set
-        var check_dict_wrap_exists = setInterval(function ()
-        {
-            if (document.querySelector('.' + lln_search_class_name) != null)
-            {
+        var check_dict_wrap_exists = setInterval(function () {
+            if (document.querySelector('.' + lln_search_class_name) != null) {
                 clearInterval(check_dict_wrap_exists);
                 console.log("'" + lln_search_class_name + "' has been found...")
 
                 Add_Functions_To_Side_Bar_Subs();
                 //Highlight_Words();
 
-                var dict_wrap_observer = new MutationObserver(function (mutations)
-                {
-                    for (let mutation of mutations)
-                    {
+                var dict_wrap_observer = new MutationObserver(function (mutations) {
+                    for (let mutation of mutations) {
                         // look for either the subtitle dictionary clicked or the side bar dictionary first clicked
-                        for(let new_elem of mutation.addedNodes)
-                        {
-                            if (new_elem instanceof HTMLElement)
-                            {
-                                if (new_elem.classList.contains('lln-full-dict'))
-                                {
+                        for (let new_elem of mutation.addedNodes) {
+                            if (new_elem instanceof HTMLElement) {
+                                if (new_elem.classList.contains('lln-full-dict')) {
                                     // the dictionary has been opened so we add the Anki button to it
                                     console.log("dictionary has been loaded...");
                                     Add_Anki_Button_To_Popup_Dictionary();
@@ -66,13 +55,11 @@
         }, 100); // check every 100ms 
     }
 
-    function Add_Anki_Button_To_Popup_Dictionary()
-    {
+    function Add_Anki_Button_To_Popup_Dictionary() {
         const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
         const highlight_location = document.getElementsByClassName('lln-word-save-buttons-wrap')[0];
 
-        if(!btn_location && !highlight_location)
-        {
+        if (!btn_location && !highlight_location) {
             console.log("Error finding the elements: 'lln-external-dicts-container' and 'lln-word-save-buttons-wrap'")
             return;
         }
@@ -90,15 +77,13 @@
         remove_highlight.setAttribute("data-tippy-content", "Remove word from being highlighted");
 
         // HANDLE SIDE BAR DICT
-        if (document.querySelector('.lln-full-dict.right') != null)
-        {
+        if (document.querySelector('.lln-full-dict.right') != null) {
             anki_div.onclick = Handle_Jump_To_Subtitle_With_Sidebar;
             remove_highlight.onclick = Remove_Word_From_Highlight_List;
         }
 
         // HANDLE SUBTITLE DICT
-        else if (document.querySelector('.lln-full-dict') != null)
-        {
+        else if (document.querySelector('.lln-full-dict') != null) {
             anki_div.onclick = Handle_Subtitle_Dictionary;
             remove_highlight.onclick = Remove_Word_From_Highlight_List;
         }
@@ -108,52 +93,42 @@
         console.log("Boom! Button has been added!")
     }
 
-    function Remove_Word_From_Highlight_List()
-    {
+    function Remove_Word_From_Highlight_List() {
         console.log("[Remove_Word_From_Highlight_List] Get current word and remove from saved list of words")
 
         // Get currently clicked word..
         const word_element = document.getElementsByClassName('lln-dict-contextual');
-        if (word_element.length)
-        {
-            if (word_element[0].childElementCount === 4)
-            {
+        if (word_element.length) {
+            if (word_element[0].childElementCount === 4) {
                 var word = word_element[0].children[1].innerText;
-            } else if (word_element[0].childElementCount === 3)
-            {
+            } else if (word_element[0].childElementCount === 3) {
                 var word = word_element[0].children[0].innerText;
             }
-        } else
-        {
+        } else {
             console.log("[Remove_Word_From_Highlight_List] Cannot get word from subtitle")
             return
         }
 
         // Get the current list of stored words
-        if (word !== "")
-        {
-            chrome.storage.local.get({ user_saved_words: [] }, function (result)
-            {
+        if (word !== "") {
+            chrome.storage.local.get({ user_saved_words: [] }, function (result) {
                 // Then we add the new word to the current stored list
                 var words = result.user_saved_words;
 
                 const index = words.indexOf(word.toLowerCase());
-                if (index > -1)
-                {
+                if (index > -1) {
                     words.splice(index, 1);
                 }
 
                 // Save the list back to chrome
-                chrome.storage.local.set({ user_saved_words: words }, () =>
-                {
+                chrome.storage.local.set({ user_saved_words: words }, () => {
                     Update_Subtitle_Highlighting_Words();
                 });
             });
         }
     }
 
-    function Handle_Jump_To_Subtitle_With_Sidebar()
-    {
+    function Handle_Jump_To_Subtitle_With_Sidebar() {
         // When we click a word in the sidebar that is not the active subtitle, we will
         // will jump to that subtitle in the video, pause, then send the relevant data
         // to anki
@@ -164,9 +139,8 @@
             document.getElementsByClassName("lln-vertical-view-sub lln-with-play-btn active")[0].classList.remove("active")
 
         const active_side_bar_subtitile = document.getElementsByClassName('anki-active-sidebar-sub');
-        
-        if(active_side_bar_subtitile.length > 0)
-        {            
+
+        if (active_side_bar_subtitile.length > 0) {
             // Get the video element
             // NOTE : This might be different on Netflix...
             const video_element = document.getElementsByTagName('video')[0];
@@ -174,80 +148,68 @@
             // add "active" to the current "anki-active-sidebar-sub", "anki-active-sidebar-sub" is set when we
             // click on a word in the sidebar
             active_side_bar_subtitile[0].classList.add("active");
-    
+
             // jump video to the subtitle with the word we want
             document.querySelector('.anki-onclick.active').click();
-    
+
             console.log("[Handle_Jump_To_Subtitle_With_Sidebar] pause the video!")
             video_element.pause();
-    
-            var checkExist = setInterval(function ()
-            {
+
+            var checkExist = setInterval(function () {
                 // Wait for the video to jump to time and be paused...
                 console.log("[Handle_Jump_To_Subtitle_With_Sidebar] Video state = " + video_element.readyState)
-                if (video_element.readyState === 4)
-                {
+                if (video_element.readyState === 4) {
                     clearInterval(checkExist)
                     Subtitle_Dictionary_GetData();
                 }
             }, 250);
         }
-        else
-        {
+        else {
             console.log("Handle_Jump_To_Subtitle_With_Sidebar - Error with 'anki-active-sidebar-sub'");
         }
     }
 
-    function Handle_Subtitle_Dictionary()
-    {
+    function Handle_Subtitle_Dictionary() {
         console.log("[Handle_Subtitle_Dictionary] Subtitle Dictionary has been clicked...")
-        if (document.querySelector('.lln-full-dict') != null)
-        {
+        if (document.querySelector('.lln-full-dict') != null) {
             // We have the subtitle bar dictionary open
             Subtitle_Dictionary_GetData();
         }
-        else
-        {
+        else {
             console.log("[Handle_Subtitle_Dictionary] ERROR!!")
         }
         return;
     }
 
-    function Get_Video_URL()
-    {
-        var time_stamped_url    = "url_here";
-        var video_id            = "1234";
+    function Get_Video_URL() {
+        var time_stamped_url = "url_here";
+        var video_id = "1234";
 
         // YOUTUBE URL
-        if (window.location.href.includes("youtube.com/watch"))
-        {
+        if (window.location.href.includes("youtube.com/watch")) {
             const rawid = window.location.search.split('v=')[1];
             const ampersand_position = rawid.indexOf('&');
-    
-            if (ampersand_position != -1)
-            {
+
+            if (ampersand_position != -1) {
                 video_id = rawid.substring(0, ampersand_position);
             }
-            else
-            {
+            else {
                 video_id = rawid;
             }
             console.log("youtube video id : ", video_id);
-            
+
             // build url
             const curr_time = document.querySelector(".video-stream").currentTime.toFixed();
 
             time_stamped_url = "https://youtu.be/" + video_id + "?t=" + curr_time; /* example: https://youtu.be/RksaXQ4C1TA?t=123 */
         }
         // NETFLIX URL
-        else if (window.location.href.includes("netflix.com/watch"))
-        {
+        else if (window.location.href.includes("netflix.com/watch")) {
             const page_url = window.location.href;
             const pattern = /(?:title|watch)\/(\d+)/;
             const match = page_url.match(pattern);
 
-            if(match && match[1])
-            {
+            if (match && match[1]) {
                 video_id = match[1];
             }
             console.log("netflix video id : ", video_id);
@@ -257,67 +219,57 @@
 
             time_stamped_url = "https://www.netflix.com/watch/" + video_id + "?t=" + curr_time; // https://www.netflix.com/watch/70196252?t=349
         }
-        else
-        {
+        else {
             console.log("What website are we on?");
         }
 
         return [time_stamped_url, video_id];
     }
 
-    function Get_Screenshot()
-    {
-        if(window.location.href.includes("youtube.com/watch"))
-        {
+    function Get_Screenshot() {
+        if (window.location.href.includes("youtube.com/watch")) {
             var canvas = document.createElement('canvas');
             var video = document.querySelector('video');
             var ctx = canvas.getContext('2d');
-    
+
             // Change the size here
             canvas.width = 640;
             canvas.height = 360;
-    
+
             ctx.drawImage(video, 0, 0, 640, 360);
-    
+
             var dataURL = canvas.toDataURL("image/png");
             dataURL = dataURL.replace(/^data:image\/(png|jpg);base64,/, "")
-    
+
             //return [canvas.width, canvas.height, dataURL];
             return Promise.resolve([canvas.width, canvas.height, dataURL]);
         }
-        else if (window.location.href.includes("netflix.com/watch"))
-        {
+        else if (window.location.href.includes("netflix.com/watch")) {
             // Replace 'yourElementId' with the ID of your element or use another way to select your element
-            const dictionary_element        = document.getElementsByClassName('lln-full-dict')[0];
-            const extern_dict_row_element   = document.getElementsByClassName('lln-external-dicts-row')[0];
+            const dictionary_element = document.getElementsByClassName('lln-full-dict')[0];
+            const extern_dict_row_element = document.getElementsByClassName('lln-external-dicts-row')[0];
 
             // Send a message to background.js requesting to capture the visible tab     
-            dictionary_element.style.visibility         = "hidden";
-            extern_dict_row_element.style.visibility    = "hidden";
+            dictionary_element.style.visibility = "hidden";
+            extern_dict_row_element.style.visibility = "hidden";
 
             console.log('Dictionary Element is now hidden, I hope');
-            
-            return new Promise(function (resolve, reject) 
-            {
-                setTimeout(function ()
-                {
-                    chrome.runtime.sendMessage({ action: 'captureVisibleTab' }, function (response) 
-                    {
-                        if (response && response.imageData) 
-                        {
-                            dictionary_element.style.visibility         = "visible";
-                            extern_dict_row_element.style.visibility    = "visible";
+
+            return new Promise(function (resolve, reject) {
+                setTimeout(function () {
+                    chrome.runtime.sendMessage({ action: 'captureVisibleTab' }, function (response) {
+                        if (response && response.imageData) {
+                            dictionary_element.style.visibility = "visible";
+                            extern_dict_row_element.style.visibility = "visible";
 
                             const img = new Image();
-                            img.onload = function() 
-                            {
+                            img.onload = function () {
                                 const image_data = img.src.replace(/^data:image\/(png|jpg);base64,/, "");
                                 resolve([img.width, img.height, image_data]);
                             };
                             img.src = response.imageData;
                         }
-                        else 
-                        {
+                        else {
                             reject(new Error('Failed to capture image data'));
                         }
                         console.log('Captured image data:', response);
@@ -329,8 +281,26 @@
         return Promise.resolve([100, 100, 0]);
     }
 
-    async function Subtitle_Dictionary_GetData()
-    {
+    function Subtitle_ExtractTransliteration() {
+        var result = {
+            "sentence": [],
+            "translit": {}
+        };
+        let domWords = document.getElementsByClassName('lln-subs')[0].getElementsByClassName('lln-word');
+        for (let i = 0; i < domWords.length; i++) {
+            let wordSplit = domWords[i].innerText.split('\n');
+            if (wordSplit.length > 1) {
+                result["translit"][wordSplit[1]] = wordSplit[0];
+                result["sentence"].push(wordSplit[1]);
+            } else {
+                result["translit"][wordSplit[0]] = false;
+                result["sentence"].push(wordSplit[1]);
+            }
+        }
+        return result;
+    }
+
+    async function Subtitle_Dictionary_GetData() {
         // This is where we pull all the data we want from the popup dictionary
         console.log("[Subtitle_Dictionary_GetData] Getting Data for Anki...")
 
@@ -345,73 +315,78 @@
         /* Getting translation of the word selected */
         // make sure the translation language is set to english
         const dict_context = document.getElementsByClassName('lln-dict-contextual')
-        if (dict_context.length)
-        {
+        if (dict_context.length) {
             var word = dict_context[0].children[1].innerText;
-            var translation_text = dict_context[0].innerText; // ex: '3k\nвпечатлениях\nimpressions'
-            var translation_text_without_most_common_number = translation_text.split("\n").slice(1);// removing the 3k, 2k, 4k, from the translation
-            //var translation = translation_text_without_most_common_number.join('\n').replace(/(?:\r\n|\r|\n)/g, '<br>'); // replace line brea '\n' with <br> tag
-            var translation = translation_text_without_most_common_number.join('<br>'); // replace line brea '\n' with <br> tag
-        } 
-        else
-        {
+            let split = word.split(" ");
+            if (split.length > 1) {
+                word = split[0];
+                var extra_definitions = split[0] + '[' + split[1] + ']';
+            }
+            var translation = document.getElementsByClassName("lln-dict-contextual-trans")[0].innerText;
+            if (!translation) {
+                var translation_text = dict_context[0].innerText; // ex: '3k\nвпечатлениях\nimpressions'
+                var translation_text_without_most_common_number = translation_text.split("\n").slice(1);// removing the 3k, 2k, 4k, from the translation
+                //var translation = translation_text_without_most_common_number.join('\n').replace(/(?:\r\n|\r|\n)/g, '<br>'); // replace line brea '\n' with <br> tag
+                translation = translation_text_without_most_common_number.join('<br>'); // replace line brea '\n' with <br> tag
+            }
+        }
+        else {
             /* English word is clicked */
-            if(document.getElementsByClassName('lln-highlighted-word'))
-            {
+            if (document.getElementsByClassName('lln-highlighted-word')) {
                 var word = document.getElementsByClassName('lln-highlighted-word')[0].innerText; // NOTE : Could we just do this for any word selected?
             }
-            else
-            {
+            else {
                 var word = ""
             }
 
             var translation = ""
         }
 
-        if (document.getElementsByClassName('lln-dict-section-full').length)
-        {
+        if (!extra_definitions && document.getElementsByClassName('lln-dict-section-full').length) {
             //var extra_definitions = document.getElementsByClassName('lln-dict-section-full')[0].innerText.replace(/(?:\r\n|\r|\n)/g, '<br>');
-            var extra_definitions = document.getElementsByClassName('lln-dict-section-full')[0].innerHTML;
+            extra_definitions = document.getElementsByClassName('lln-dict-section-full')[0].innerHTML;
         }
 
         //console.log("Video URL (and time stamp) =", youtube_share_url)
 
         // make selected word bold in the subtitles, might not work for all languages :(
-        var subtitle = document.getElementsByClassName('lln-subs')[0].innerText;
-        subtitle = subtitle.replace(new RegExp(`(?<![\u0400-\u04ff])${word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + word + "</b>");
+        var subWithTranslit = Subtitle_ExtractTransliteration();
+        var subtitle = subWithTranslit["sentence"].join("");
+        var subtitle_transliteration = "";
+        for (let i = 0; i < subWithTranslit["sentence"].length; i++) {
+            let word = subWithTranslit["sentence"][i];
+            subtitle_transliteration += word;
+            if (subWithTranslit["translit"][word]) {
+                subtitle_transliteration += '[' + subWithTranslit["translit"][word] + ']';
+            }
+        }
 
         // get 2nd language translation (this appears under the main subtitle)
         // 	this is set with the "Translation language" in the options of LLWYT
-        if (document.getElementsByClassName('lln-whole-title-translation').length)
-        {
+        if (document.getElementsByClassName('lln-whole-title-translation').length) {
             //"var" is FUNCTION scoped and "let" is BLOCK scoped
             var subtitle_translation = document.getElementsByClassName('lln-whole-title-translation')[0].innerText;
             //let subtitle_translation = document.getElementsByClassName('lln-whole-title-translation')[0].innerText.replace('\n', ' ');
         }
-        else
-        {
+        else {
             var subtitle_translation = ""
         }
 
-        chrome.storage.local.get("ankiExampleSentenceSource", ({ ankiExampleSentenceSource }) =>
-        {
+        chrome.storage.local.get("ankiExampleSentenceSource", ({ ankiExampleSentenceSource }) => {
             console.log("Getting example setting toggle: ", ankiExampleSentenceSource)
             // Getting Example sentences 
             // There are two sets of example sentences, so we can choose between which set we want
             // TODO : default to one or none if there is nothing
             var example_sentences = "";
             const example_sentences_element = document.getElementsByClassName('lln-word-examples');
-            if (example_sentences_element.length)
-            {
+            if (example_sentences_element.length) {
                 // We default to using current
                 const current_or_tatoeba = ankiExampleSentenceSource === "Tatoeba" ? 1 : 0;
 
                 const example_sentences_list = example_sentences_element[current_or_tatoeba];
-                if(example_sentences_list)
-                {
+                if (example_sentences_list) {
                     const all_examples = example_sentences_list.children;
-                    for (var i = 1; i != all_examples.length; i++)
-                    {
+                    for (var i = 1; i != all_examples.length; i++) {
                         example_sentences += all_examples[i].innerText + "<br>";
                     }
                 }
@@ -425,7 +400,8 @@
                 "word": word.toLowerCase() || "", // better here to help with reg
                 "basic-translation": translation || "",
                 "extra-translation": extra_definitions || "",
-                "url": '<a href="' + video_url + '">Video Link</a>' || "",
+                "url": video_url,
+                "sentence-reading": subtitle_transliteration || "",
                 "example-sentences": example_sentences || "",
             };
 
@@ -436,33 +412,25 @@
         });
     }
 
-    function Add_Functions_To_Side_Bar_Subs()
-    {
+    function Add_Functions_To_Side_Bar_Subs() {
         // We have the side bar dictionary open
         console.log("[Add_Functions_To_Side_Bar_Subs] Adding all 'onclick' events...")
 
-        var wait_for_subtitle_list = setInterval(function () 
-        {
+        var wait_for_subtitle_list = setInterval(function () {
             const sub_list_element = document.getElementById("lln-vertical-view-subs");
-            if (sub_list_element) 
-            {
+            if (sub_list_element) {
                 clearInterval(wait_for_subtitle_list);
-                
+
                 const sub_list_element = document.getElementById("lln-vertical-view-subs");
                 // Create a MutationObserver to observe changes in the div
-                const sub_list_observer = new MutationObserver(function(mutations) 
-                {
-                    mutations.forEach(function(mutation) 
-                    {
+                const sub_list_observer = new MutationObserver(function (mutations) {
+                    mutations.forEach(function (mutation) {
                         var elements_in_view = document.querySelectorAll('.in-scroll');
 
-                        elements_in_view.forEach(function(element) 
-                        {
-                            if (!element.classList.contains("anki-onclick")) 
-                            {
+                        elements_in_view.forEach(function (element) {
+                            if (!element.classList.contains("anki-onclick")) {
                                 element.classList.add("anki-onclick");
-                                element.onclick = function() 
-                                {
+                                element.onclick = function () {
                                     const parent_with_data_index = event.target.parentNode.parentNode;
 
                                     // Set current "data-index" as the "anki-active-sidebar-sub"
@@ -476,8 +444,7 @@
                                     // the classname 'anki-active-sidebar-sub'
                                     let elem_with_anki_active = document.getElementsByClassName("anki-active-sidebar-sub")[0];
 
-                                    if(elem_with_anki_active)
-                                    {
+                                    if (elem_with_anki_active) {
                                         elem_with_anki_active.classList.remove("anki-active-sidebar-sub")
                                     }
                                     parent_with_data_index.classList.add("anki-active-sidebar-sub");
@@ -487,45 +454,36 @@
                     });
                 });
                 const subs_list_config = { attributes: true, attributeFilter: ['class'] };
-        
+
                 sub_list_observer.observe(sub_list_element, subs_list_config);
             }
         }, 100);
     }
 
-    function Store_Word_In_Chrome(word_to_store)
-    {
+    function Store_Word_In_Chrome(word_to_store) {
         // Get the current list of stored words
-        chrome.storage.local.get({ user_saved_words: [] }, function (result)
-        {
+        chrome.storage.local.get({ user_saved_words: [] }, function (result) {
             // Then we add the new word to the current stored list
             var words = result.user_saved_words;
             words.push(word_to_store.toLowerCase())
 
             // Save the list back to chrome
-            chrome.storage.local.set({ user_saved_words: words }, () =>
-            {
+            chrome.storage.local.set({ user_saved_words: words }, () => {
                 Update_Subtitle_Highlighting_Words(); // Update the current subtitle with the newest words saved.
             });
         });
     }
 
-    function Highlight_Words()
-    {
-        var wait_for_subtitles_to_show = setInterval(function ()
-        {
-            if (document.getElementById('lln-subs-content'))
-            {
+    function Highlight_Words() {
+        var wait_for_subtitles_to_show = setInterval(function () {
+            if (document.getElementById('lln-subs-content')) {
                 clearInterval(wait_for_subtitles_to_show); // Stop timed interval
 
                 console.log("[Highlight_Words] Highlighting words in subtitle...")
 
-                var subtitle_observer = new MutationObserver(function (mutations)
-                {
-                    for (let mutation of mutations)
-                    {
-                        if (mutation.addedNodes.length === 3)
-                        {
+                var subtitle_observer = new MutationObserver(function (mutations) {
+                    for (let mutation of mutations) {
+                        if (mutation.addedNodes.length === 3) {
                             Update_Subtitle_Highlighting_Words()
                         }
                         break;
@@ -540,13 +498,11 @@
         }, 100);
     }
 
-    function Update_Subtitle_Highlighting_Words()
-    {
+    function Update_Subtitle_Highlighting_Words() {
         console.log("[Update_Subtitle_Highlighting_Words]")
 
         // Get saved words
-        chrome.storage.local.get(['user_saved_words', 'ankiHighLightColour', 'ankiHighLightSavedWords'], function ({ user_saved_words, ankiHighLightColour, ankiHighLightSavedWords })
-        {
+        chrome.storage.local.get(['user_saved_words', 'ankiHighLightColour', 'ankiHighLightSavedWords'], function ({ user_saved_words, ankiHighLightColour, ankiHighLightSavedWords }) {
             console.log("[Update_Subtitle_Highlighting_Words] Getting saved words...")
             // console.log(user_saved_words)
 
@@ -555,12 +511,9 @@
                 return;
 
             var subtitles = document.getElementsByClassName('lln-subs');
-            if (subtitles.length > 0)
-            {
-                subtitles[0].querySelectorAll('[data-word-key*="WORD|"').forEach((element) =>
-                {
-                    if (user_saved_words.includes(element.innerText.toLowerCase()))
-                    {
+            if (subtitles.length > 0) {
+                subtitles[0].querySelectorAll('[data-word-key*="WORD|"').forEach((element) => {
+                    if (user_saved_words.includes(element.innerText.toLowerCase())) {
                         //element.style.color = 'LightCoral'; // #F08080
                         element.style.color = ankiHighLightColour;
                     }
@@ -574,18 +527,16 @@
     }
 
     /* ----------------------------------------------------------------------------------------------------------- */
-    function LLW_Send_Data_To_Anki(data)
-    {
+    function LLW_Send_Data_To_Anki(data) {
         console.log("[LLW_Send_Data_To_Anki] Sending to Anki...")
 
         Store_Word_In_Chrome(data['word']);
 
         chrome.storage.local.get(
             ['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldScreenshotSelected', 'ankiSubtitleSelected', 'ankiSubtitleTranslation',
-                'ankiWordSelected', "ankiBasicTranslationSelected", "ankiExampleSentencesSelected", "ankiOtherTranslationSelected", "ankiFieldURL", "ankiConnectUrl", "ankiExampleSentenceSource"],
+                'ankiWordSelected', "ankiBasicTranslationSelected", "ankiSentenceReadingSelected", "ankiExampleSentencesSelected", "ankiOtherTranslationSelected", "ankiFieldURL", "ankiConnectUrl", "ankiExampleSentenceSource"],
             ({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldScreenshotSelected, ankiSubtitleSelected, ankiSubtitleTranslation,
-                ankiWordSelected, ankiBasicTranslationSelected, ankiExampleSentencesSelected, ankiOtherTranslationSelected, ankiFieldURL, ankiConnectUrl, ankiExampleSentenceSource }) =>
-            {
+                ankiWordSelected, ankiBasicTranslationSelected, ankiSentenceReadingSelected, ankiExampleSentencesSelected, ankiOtherTranslationSelected, ankiFieldURL, ankiConnectUrl, ankiExampleSentenceSource }) => {
                 url = ankiConnectUrl || 'http://localhost:8765';
                 model = ankiNoteNameSelected || 'Basic';
                 deck = ankiDeckNameSelected || 'Default';
@@ -608,7 +559,9 @@
                     [ankiBasicTranslationSelected]: data['basic-translation'],
                     [ankiOtherTranslationSelected]: data['extra-translation'],
                     [ankiFieldURL]: data['url'],
-                    [ankiExampleSentencesSelected]: data['example-sentences']
+                    [ankiSentenceReadingSelected]: data['sentence-reading'],
+                    [ankiExampleSentencesSelected]: data['example-sentences'],
+                    'Kanji': 'True'
                 };
 
                 console.log(fields)
@@ -652,20 +605,17 @@
                     body: JSON.stringify(permission_data),
                 })
                     .then((res) => res.json())
-                    .then((data) =>
-                    {
+                    .then((data) => {
                         console.log(data);
                         fetch(url, {
                             method: "POST",
                             body: JSON.stringify(body),
                         })
                             .then((res) => res.json())
-                            .then((data) =>
-                            {
+                            .then((data) => {
                                 console.log("Fetch Return:")
                                 console.log(data)
-                                if (data.length > 1)
-                                {
+                                if (data.length > 1) {
                                     // https://jsfiddle.net/2qasgcfd/3/
                                     // https://github.com/apvarun/toastify-js
                                     if (data[1].result === null)
@@ -675,12 +625,10 @@
 
                                 }
                             })
-                            .catch((error) =>
-                            {
+                            .catch((error) => {
                                 ShowErrorMessage("Anki Post Error! " + error);
                             })
-                    }).catch((error) =>
-                    {
+                    }).catch((error) => {
                         ShowErrorMessage("Permission Error, extension doesnt have permission to connect to Anki, check AnkiConnect config 'webCorsOriginList', " + error);
                     });
                 console.log("[LLW_Send_Data_To_Anki] Send to ANKI complete!");
@@ -688,8 +636,7 @@
         );
     }
 
-    function ShowSucessMessage(message)
-    {
+    function ShowSucessMessage(message) {
         Toastify({
             text: message,
             duration: 3000,
@@ -699,8 +646,7 @@
         }).showToast();
         console.log(message);
     }
-    function ShowErrorMessage(message)
-    {
+    function ShowErrorMessage(message) {
         Toastify({
             text: message,
             duration: 3000,
